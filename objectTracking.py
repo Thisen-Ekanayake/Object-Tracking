@@ -24,13 +24,20 @@ def draw_rectangle(event, x, y, flags, param):
         roi_selected = True  
         tracker_initialized = False  
 
+# Function to apply CLAHE (Adaptive Histogram Equalization)
+def apply_clahe(frame):
+    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+    l = clahe.apply(l)
+    lab = cv2.merge((l, a, b))
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
 # Open webcam
 cap = cv2.VideoCapture(0)
 
 # Create the window
 cv2.namedWindow("Live Feed", cv2.WINDOW_NORMAL)  
-#cv2.setWindowProperty("Live Feed", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
 cv2.setMouseCallback("Live Feed", draw_rectangle)
 
 tracker = None
@@ -43,6 +50,9 @@ while True:
     # Mirror the camera feed
     frame = cv2.flip(frame, 1)  
 
+    # Apply CLAHE to improve contrast
+    frame = apply_clahe(frame)
+
     # Create a copy of the frame to show live drawing without affecting tracking
     display_frame = frame.copy()
 
@@ -53,7 +63,12 @@ while True:
     # If ROI is selected and tracker is not initialized
     if roi_selected and not tracker_initialized:
         tracker = cv2.TrackerCSRT_create()
-        roi = (ix, iy, fx - ix, fy - iy)  
+        
+        # Ensure ROI dimensions are always positive
+        x1, y1 = min(ix, fx), min(iy, fy)
+        x2, y2 = max(ix, fx), max(iy, fy)
+        roi = (x1, y1, x2 - x1, y2 - y1)
+
         tracker.init(frame, roi)
         tracker_initialized = True
         roi_selected = False  
@@ -65,7 +80,11 @@ while True:
             x, y, w, h = [int(v) for v in roi]
             cv2.rectangle(display_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         else:
-            cv2.putText(display_frame, "Tracking failed", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            # Tracking failed, reset selection
+            tracker_initialized = False
+            roi_selected = False
+            cv2.putText(display_frame, "Tracking failed, re-select object", (50, 50), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
     # Show the frame with selection updates
     cv2.imshow("Live Feed", display_frame)
