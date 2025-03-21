@@ -34,7 +34,7 @@ def apply_clahe(frame):
     return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
 # Open webcam
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 
 # Create the window
 cv2.namedWindow("Live Feed", cv2.WINDOW_NORMAL)  
