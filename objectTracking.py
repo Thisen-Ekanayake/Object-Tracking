@@ -6,7 +6,7 @@ from ultralytics import YOLO
 model = YOLO("yolov8n.pt")  # Use 'yolov8s.pt' for better accuracy
 
 # Open webcam
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 # Initialize tracking variables
 tracker = None
